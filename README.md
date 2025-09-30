@@ -166,6 +166,27 @@ python app.py
 
 ### Production Deployment
 
+#### Vercel (Recommended)
+The easiest way to deploy Theia:
+
+```bash
+# Option 1: Deploy via GitHub (Recommended)
+# 1. Go to vercel.com and connect your GitHub
+# 2. Import the hsultan-tech/Theia repository
+# 3. Deploy automatically!
+
+# Option 2: Deploy via CLI
+npm install -g vercel
+vercel login
+vercel
+```
+
+**Live in minutes!** Vercel automatically handles:
+- ✅ Serverless deployment
+- ✅ Global CDN
+- ✅ HTTPS certificates
+- ✅ Automatic builds from GitHub
+
 #### Heroku
 ```bash
 # Install Heroku CLI and login
