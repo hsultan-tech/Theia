@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% block title %}Diagnose - Theia{% endblock %}
+{% block landing %}
+<div class="diagnose-page">
+    <div class="diagnose-hero-simple">
+        <h1 class="poppins fade-Down">AI-Powered Diagnosis</h1>
+        <p class="poppins fade-Up">Upload an ophthalmic image for instant, accurate analysis</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="diagnose-main-content">
+    <div class="diagnose-wrapper">
+        <!-- Upload Card -->
+        <div class="diagnose-card" data-aos="fade-up">
+            <div class="card-header-section">
+                <h2 class="poppins">Upload Image</h2>
+                <p class="poppins">Select a clear ophthalmic image</p>
+            </div>
+            
+            <input type="file" id="file-field" onchange="previewImage(event)" accept="image/*" hidden>
+            
+            <div id="upload-zone" class="upload-zone">
+                <div class="upload-icon-large">📸</div>
+                <h3 class="poppins">Drop your image here</h3>
+                <p class="poppins">or</p>
+                <label for="file-field" class="btn-upload-primary">
+                    Browse Files
+                </label>
+                <p class="upload-support poppins">Supports: JPG, PNG, GIF</p>
+            </div>
+            
+            <div id="preview-zone" class="preview-zone" style="display: none;">
+                <img src="{{ url_for('static', filename='images/upload.png')}}" id="image-field" crossorigin="anonymous" alt="Preview">
+                <div class="preview-actions">
+                    <button class="btn-secondary-action" onclick="document.getElementById('file-field').click()">
+                        Change Image
+                    </button>
+                    <button class="btn-primary-action" onclick="run()">
+                        Analyze Image
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Card -->
+        <div class="diagnose-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="card-header-section">
+                <h2 class="poppins">Analysis Results</h2>
+                <p class="poppins">AI-powered diagnostic insights</p>
+            </div>
+            
+            <div id="results-zone">
+                <div id="empty-state" class="empty-state-results">
+                    <div class="empty-icon">⏳</div>
+                    <h3 class="poppins">Awaiting Analysis</h3>
+                    <p class="poppins">Upload an image to get started</p>
+                </div>
+                
+                <div id="chart-zone" style="display: none;">
+                    <canvas id="myChart"></canvas>
+                    <div id="diagnosis-info" class="diagnosis-info-box"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block contentTwo %}
+<div class="info-section-diagnose">
+    <div class="info-cards-grid">
+        <div class="info-mini-card" data-aos="fade-up">
+            <div class="mini-icon">👁️</div>
+            <h3 class="poppins">Ocular Disease Detection</h3>
+            <p class="poppins">Theia analyzes retinal images to detect signs of diabetic retinopathy, glaucoma, cataracts, and other eye conditions</p>
+        </div>
+        <div class="info-mini-card" data-aos="fade-up" data-aos-delay="100">
+            <div class="mini-icon">🤖</div>
+            <h3 class="poppins">AI-Powered Analysis</h3>
+            <p class="poppins">Advanced deep learning models trained on thousands of ophthalmic images provide accurate diagnostic insights</p>
+        </div>
+        <div class="info-mini-card" data-aos="fade-up" data-aos-delay="200">
+            <div class="mini-icon">⚕️</div>
+            <h3 class="poppins">Clinical Decision Support</h3>
+            <p class="poppins">Helps optometrists and ophthalmologists make faster, more confident diagnoses and improve patient outcomes</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block script %}
+<script>
+
+let armd;
+let cataract;
+let diabetes;
+let glaucoma;
+let hypertension;
+let myopia;
+let normal;
+let other;
+let finalArr;
+let highestLabel;
+let highestVal;
+let highestValRounded;
+
+// Preview image function
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('image-field').src = e.target.result;
+            document.getElementById('upload-zone').style.display = 'none';
+            document.getElementById('preview-zone').style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    }
+}
+
+async function run() {
+	// Show loading state
+	document.getElementById('empty-state').innerHTML = '<div class="loading-spinner"></div><h3 class="poppins">Analyzing Image...</h3><p class="poppins">Please wait...</p>';
+	
+	// Predict Function
+	const model = await tf.loadGraphModel('static/theiamodel/model.json');
+	const image = document.getElementById('image-field');
+    let tensor = tf.browser.fromPixels(image, 3)
+		.resizeNearestNeighbor([224, 224]) // change the image size
+		.expandDims()
+		.toFloat()
+		.reverse(-1);
+	const prediction = model.predict(tensor).data().then((d)=>{
+       
+        armd = d[0] * 100;
+        cataract = d[1] * 100;
+        diabetes = d[2] * 100;
+        glaucoma = d[3] * 100;
+        hypertension = d[4] * 100;
+        myopia = d[5] * 100;
+        normal = d[6] * 100;
+        other = d[7] * 100;
+        finalArr = [armd, cataract, diabetes, glaucoma, hypertension, myopia, normal, other]
+        console.log(finalArr)
+        highestVal = Math.max(armd, cataract, diabetes, glaucoma, hypertension, myopia, normal, other)
+        highestValRounded = Math.ceil(highestVal)
+        if (highestVal === armd){
+            highestLabel = "is diagnosed Macular Degeneration"
+        } else if (highestVal === cataract){
+            highestLabel = "is diagnosed Cataract"
+        } else if (highestVal === diabetes){
+            highestLabel = "is diagnosed Diabetic retinopathy"
+        } else if (highestVal === glaucoma){
+            highestLabel = "is diagnosed Glaucoma"
+        } else if (highestVal === hypertension){
+            highestLabel = "is diagnosed Hypertension"
+        } else if (highestVal === myopia){
+            highestLabel = "is diagnosed Pathological Myopia "
+        } else if (highestVal === normal){
+            highestLabel = "is normal"
+        } else if (highestVal === other){
+            highestLabel = "might be diagnosed with another manifestation"
+        }
+
+        // Hide empty state and show results
+        document.getElementById('empty-state').style.display = 'none';
+        document.getElementById('chart-zone').style.display = 'block';
+        
+        // Update diagnosis info
+        document.getElementById('diagnosis-info').innerHTML = `
+            <div class="diagnosis-result-card">
+                <h3 class="poppins">Primary Diagnosis</h3>
+                <div class="diagnosis-main">${highestLabel}</div>
+                <div class="confidence-section">
+                    <span class="conf-label">Confidence Level</span>
+                    <div class="conf-bar-container">
+                        <div class="conf-bar-fill" style="width: ${highestValRounded}%"></div>
+                    </div>
+                    <span class="conf-percent">${highestValRounded}%</span>
+                </div>
+            </div>
+        `;
+
+        var ctx = document.getElementById('myChart');
+        if(window.bar != undefined) 
+        window.bar.destroy(); 
+        window.bar = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Macular Degeneration', 'Cataract', 'Diabetic Retinopathy', 'Glaucoma', 'Hypertension', 'Pathological Myopia', 'Normal', 'Other Diseases'],
+                datasets: [{
+                    label: "Confidence Level (%)",
+                    data: finalArr,
+                    backgroundColor: [
+                        'rgba(102, 126, 234, 0.8)',
+                        'rgba(118, 75, 162, 0.8)',
+                        'rgba(245, 87, 108, 0.8)',
+                        'rgba(79, 172, 254, 0.8)',
+                        'rgba(240, 147, 251, 0.8)',
+                        'rgba(250, 208, 196, 0.8)',
+                        'rgba(34, 197, 94, 0.8)',
+                        'rgba(251, 191, 36, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(102, 126, 234, 1)',
+                        'rgba(118, 75, 162, 1)',
+                        'rgba(245, 87, 108, 1)',
+                        'rgba(79, 172, 254, 1)',
+                        'rgba(240, 147, 251, 1)',
+                        'rgba(250, 208, 196, 1)',
+                        'rgba(34, 197, 94, 1)',
+                        'rgba(251, 191, 36, 1)'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                animation: {
+                    duration: 1500,
+                    easing: 'easeInOutQuart'
+                },
+                legend: {
+                    display: true,
+                    labels: {
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontColor: '#4a5568',
+                        padding: 20
+                    }
+                },
+                scales: {
+                    yAxes: [{
+                        display: true,
+                        gridLines: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            beginAtZero: true,
+                            max: 100,
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            fontColor: '#4a5568',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }],
+                    xAxes: [{
+                        gridLines: {
+                            display: false
+                        },
+                        ticks: {
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontColor: '#4a5568'
+                        }
+                    }]
+                },
+                tooltips: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFontFamily: 'Poppins',
+                    bodyFontFamily: 'Poppins',
+                    cornerRadius: 8,
+                    padding: 12,
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            return 'Confidence: ' + tooltipItem.yLabel.toFixed(2) + '%';
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+
+};
+
+</script>
+{% endblock %}
