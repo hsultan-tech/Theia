@@ -1,5 +1,4 @@
 from flask import Flask, render_template
-import os
 
 # Create Flask app with correct paths for Vercel
 app = Flask(__name__, 
@@ -14,5 +13,6 @@ def home():
 def identify():
     return render_template("identify.html")
 
-# For Vercel deployment
-app = app
+# Export app for Vercel
+if __name__ == "__main__":
+    app.run(debug=True)

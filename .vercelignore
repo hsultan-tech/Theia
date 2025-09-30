@@ -1,0 +1,6 @@
+theiaenv/
+__pycache__/
+*.pyc
+.DS_Store
+.git/
+data_preprocessing.ipynb
